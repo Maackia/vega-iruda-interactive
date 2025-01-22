@@ -82,7 +82,9 @@ export class PengBot implements Bot {
       if (value.value.text === 'ㅇㅂㅇ') {
         this.#client.sendChat(this.hash, '이보세요 융뎅구리 ㅋㅋㅋㅋ');
       }
-
+      if (value.value.text === 'ㅇㅂㅍ') {
+        this.#client.sendChat(this.hash, '이보세요 펭님 ㅋㅋㅋㅋ');
+      }
       if (value.value.text === '99') {
         this.#client.sendChat(this.hash, '간델게고수');
       }
