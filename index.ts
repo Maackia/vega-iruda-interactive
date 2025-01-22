@@ -5,7 +5,6 @@ import { DiceBot } from './src/bot/DiceBot.ts';
 import { EternalReturnBot } from './src/bot/EternalReturnBot.ts';
 import { LolGallBot } from './src/bot/LolGallBot.ts';
 import { LolInvenNewsBot } from './src/bot/LolInvenNewsBot.ts';
-import { MaplestoryBot } from './src/bot/MaplestoryBot.ts';
 import { NamuWikiBot } from './src/bot/NamuWikiBot.ts';
 import { OnnadaBot } from './src/bot/OnnadaBot.ts';
 import { PengBot } from './src/bot/PengBot.ts';
@@ -20,7 +19,6 @@ const { client } = app;
 const pengBot = new PengBot(client);
 const diceBot = new DiceBot(client);
 const coronaBot = new CoronaBot(client);
-const mapleBot = new MaplestoryBot(client);
 const clockBot = new ClockBot(client);
 const lolGallBot = new LolGallBot(client);
 const lolInvenNewsBot = new LolInvenNewsBot(client);
@@ -34,7 +32,6 @@ const bots: Bot[] = [
   pengBot,
   diceBot,
   coronaBot,
-  mapleBot,
   clockBot,
   lolGallBot,
   lolInvenNewsBot,
