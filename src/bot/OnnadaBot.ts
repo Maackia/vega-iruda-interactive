@@ -1,4 +1,5 @@
 import { OnnadaAnimationLoader } from '../lib/onnada/OnnadaAnimationLoader.ts';
+import { OnnadaCharacterLoader } from '../lib/onnada/OnnadaCharacterLoader.ts';
 import { Bot } from '/framework/mod.ts';
 import {
   SocketClient,
@@ -13,6 +14,7 @@ export class OnnadaBot implements Bot {
 
   #client: SocketClient;
   #loader = new OnnadaAnimationLoader();
+  #characterLoader = new OnnadaCharacterLoader();
 
   constructor(client: SocketClient) {
     this.#client = client;
@@ -55,10 +57,23 @@ export class OnnadaBot implements Bot {
       } else if (text.startsWith('@캐릭 ')) {
         const match = /@캐릭 (.*)/.exec(text);
         const word = match ? match[1] : '';
-        this.#client.sendChat(
-          this.hash,
-          `https://onnada.com/search?q=${word}&t=character`,
-        );
+        this.#characterLoader.load(word).then((chara) => {
+          if (chara) {
+            this.#client.sendGeneralPurposeCard(
+              this.hash,
+              JSON.stringify({
+                link: chara.link,
+                title: chara.name,
+                icon: chara.thumbnail,
+                subtitle: chara.animeTitle,
+                orientation: 'vertical',
+                showType: 'in-app-browser',
+              }),
+            );
+          } else {
+            this.#client.sendChat(this.hash, '캐릭터 없음');
+          }
+        });
       } else if (text.startsWith('@성우 ')) {
         const match = /@성우 (.*)/.exec(text);
         const word = match ? match[1] : '';
