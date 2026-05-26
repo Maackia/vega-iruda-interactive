@@ -50,7 +50,7 @@ export class OnnadaBot implements Bot {
         const word = match ? match[1] : '';
         this.#client.sendChat(
           this.hash,
-          `https://onnada.com/character/search?q=${word}`,
+          `https://onnada.com/search?q=${word}&t=character`,
         );
       } else if (text.startsWith('@성우 ')) {
         const match = /@성우 (.*)/.exec(text);
