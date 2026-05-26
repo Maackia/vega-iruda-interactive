@@ -36,7 +36,14 @@ export class OnnadaBot implements Bot {
                 link: animation.link,
                 title: animation.title,
                 icon: animation.thumbnail,
-                subtitle: `${animation.genre} / ${animation.media}`,
+                subtitle: (() => {
+                  const a = (animation.genre ?? '').trim();
+                  const b = (animation.media ?? '').trim();
+                  if (!a && !b) return '';
+                  if (a && b) return `${a} / ${b}`;
+                  return a || b;
+                })(),
+                // 포스터를 크게 보여주기 위해 vertical 유지
                 orientation: 'vertical',
                 showType: 'in-app-browser',
               }),

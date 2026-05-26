@@ -33,9 +33,12 @@ export class OnnadaAnimationLoader {
       result = results.find((e) => toKeyword(e.title).search(keyword) >= 0);
     }
     if (!result) {
-      return results[0];
+      result = results[0];
     }
-    return result;
+
+    // 상세 페이지에서 키워드/분류/방영일 등 보강 (검색 화면에는 장르가 없거나 축약됨)
+    const enriched = await this.enrichFromDetail(result);
+    return enriched ?? result;
   }
 
   static getUri(animationName: string): string {
@@ -43,6 +46,35 @@ export class OnnadaAnimationLoader {
     params.set('q', animationName);
     params.set('t', 'anime');
     return `https://onnada.com/search?${params.toString()}`;
+  }
+
+  private async enrichFromDetail(
+    base: AnimationLoaderResult,
+  ): Promise<AnimationLoaderResult | null> {
+    const idMatch = /\/anime\/(\d+)$/.exec(base.link);
+    const id = idMatch?.[1];
+    if (!id) return null;
+
+    const url = `https://onnada.com/anime/${id}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+    if (res.status !== 200) return null;
+    const html = await res.text();
+
+    const extracted = OnnadaAnimationLoader.parseDetailPage(html);
+    if (!extracted) return null;
+
+    return {
+      ...base,
+      // 상세가 비어있으면 검색 결과 값을 유지
+      media: extracted.media || base.media,
+      genre: extracted.genre || base.genre,
+      date: extracted.date || base.date,
+      thumbnail: extracted.thumbnail || base.thumbnail,
+    };
   }
 
   private static parseSearchResults(html: string): AnimationLoaderResult[] {
@@ -73,9 +105,7 @@ export class OnnadaAnimationLoader {
         title,
         link: `https://onnada.com/anime/${id}`,
         thumbnail: thumbMatch?.[1] ?? '',
-        // 기존 카드 UI는 `${genre} / ${media}` 를 쓰고 있어서
-        // genre에는 방영일(또는 연도/날짜)을, media에는 분류(TV/영화 등)를 넣는다.
-        genre: (dateMatch?.[1] ?? '').trim(),
+        genre: '',
         media: (mediaMatch?.[1] ?? '').trim(),
         date: (dateMatch?.[1] ?? '').trim(),
       });
@@ -121,6 +151,58 @@ export class OnnadaAnimationLoader {
     }
 
     return results;
+  }
+
+  private static parseDetailPage(html: string): Partial<AnimationLoaderResult> | null {
+    // 상세 메타: <dt>분류</dt> = TV/영화 등, 장르는 상단 category 링크 또는 RSC category 필드
+    const mediaMatch =
+      /<dt[^>]*>분류<\/dt>\s*<dd[^>]*>([^<]+)<\/dd>/.exec(html);
+    const dateMatch =
+      /<dt[^>]*>방영일<\/dt>\s*<dd[^>]*>([^<]+)<\/dd>/.exec(html);
+
+    const genre = OnnadaAnimationLoader.parseGenres(html);
+
+    // 썸네일은 RSC payload에서 src를 찾는 편이 안정적 (SSR에서 비어있는 경우 있음)
+    const thumbMatch =
+      /\\\"src\\\":\\\"(https:\/\/data\.onnada\.com\/anime\/[^\\\"]+)\\\"/.exec(
+        html,
+      ) ??
+        /src="(https:\/\/data\.onnada\.com\/anime\/[^"]+)"/.exec(html);
+
+    const media = OnnadaAnimationLoader.decodeHtmlEntities(mediaMatch?.[1] ?? '')
+      .trim();
+    const date = OnnadaAnimationLoader.decodeHtmlEntities(dateMatch?.[1] ?? '')
+      .trim();
+
+    return {
+      media,
+      date,
+      genre,
+      thumbnail: thumbMatch?.[1] ?? '',
+    };
+  }
+
+  /** 장르(학원, 로맨스 등) — RSC `category` 또는 /anime?category= 링크 */
+  private static parseGenres(html: string): string {
+    const fromRsc =
+      /\\?"category\\?":\\?"([^"\\]+)\\?"/.exec(html) ??
+        /"category":"([^"]+)"/.exec(html);
+    if (fromRsc?.[1]) {
+      return OnnadaAnimationLoader.decodeHtmlEntities(fromRsc[1])
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    const genres: string[] = [];
+    const linkRe = /href="\/anime\?category=[^"]*"[^>]*>([^<]+)<\/a>/g;
+    let m: RegExpExecArray | null;
+    while ((m = linkRe.exec(html)) !== null) {
+      const g = OnnadaAnimationLoader.decodeHtmlEntities(m[1]).trim();
+      if (g && !genres.includes(g)) genres.push(g);
+    }
+    return genres.join(' · ');
   }
 
   private static decodeHtmlEntities(s: string): string {
