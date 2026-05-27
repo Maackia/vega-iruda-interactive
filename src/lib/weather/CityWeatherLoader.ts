@@ -1,4 +1,4 @@
-import { cheerio } from 'https://deno.land/x/cheerio@1.0.7/mod.ts';
+import * as cheerio from 'npm:cheerio@1.0.0-rc.12';
 import { CityCodes as cityCodes } from './CityCodes.ts';
 
 export const FAIL_TEMPERATURE = -9999;

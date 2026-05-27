@@ -1,4 +1,4 @@
-import { cheerio } from 'https://deno.land/x/cheerio@1.0.7/mod.ts';
+import * as cheerio from 'npm:cheerio@1.0.0-rc.12';
 import { Config } from '../../common/config/Config.ts';
 import { AfreecaSearchLoader } from '../lib/afreeca/AfreecaSearchLoader.ts';
 import { LolScheduleLoader } from '../lib/lol/LolScheduleLoader.ts';
